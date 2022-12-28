@@ -316,6 +316,7 @@ func (s *Stats) getStatsFromBundle(nonce int64, bundle *paySchema.Bundle) (
 		if v.Cmp(zero) == -1 {
 			tokenIn = k
 			amountIn, _ = new(big.Float).SetInt(v).Float64()
+			amountIn *= -1
 			break
 		}
 	}

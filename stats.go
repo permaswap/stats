@@ -27,17 +27,17 @@ var log = logger.New("stats")
 
 type Stats struct {
 	chainID         int64
-	wdb             *WDB
-	routerAddr      string
+	routerAddress   string
 	startTxRawID    int64
 	startTxEverHash string
-	everClient      *sdk.Client
 	tokens          map[string]*token.Token
 	pools           map[string]*schema.Pool
 
-	engine    *gin.Engine
-	server    *http.Server
-	scheduler *gocron.Scheduler
+	everClient *sdk.Client
+	engine     *gin.Engine
+	server     *http.Server
+	wdb        *WDB
+	scheduler  *gocron.Scheduler
 
 	sub *sdk.SubscribeTx
 	//prevStats []*schema.Stats
@@ -57,7 +57,7 @@ func New(chainID int64, routerAddr string, startTxRawID int64, startTxEverHash s
 		chainID:         chainID,
 		wdb:             NewWDB(dsn),
 		engine:          gin.Default(),
-		routerAddr:      routerAddr,
+		routerAddress:   routerAddr,
 		startTxRawID:    startTxRawID,
 		startTxEverHash: startTxEverHash,
 		everClient:      client,
@@ -79,7 +79,7 @@ func (s *Stats) Run(port string) {
 
 	s.sub = s.everClient.SubscribeTxs(sdkSchema.FilterQuery{
 		StartCursor: startCursor,
-		Address:     s.routerAddr,
+		Address:     s.routerAddress,
 		Action:      paySchema.TxActionBundle,
 	})
 	go func() {
@@ -88,7 +88,7 @@ func (s *Stats) Run(port string) {
 		}
 	}()
 
-	//go s.runAPI(port)
+	go s.runAPI(port)
 	//go s.runJobs()
 }
 

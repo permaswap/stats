@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/ethereum/go-ethereum v1.10.26
 	github.com/everFinance/go-everpay v0.0.3
+	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-gonic/gin v1.8.2
 	github.com/go-co-op/gocron v1.18.0
 	github.com/inconshreveable/log15 v3.0.0-testing.5+incompatible

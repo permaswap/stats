@@ -160,7 +160,7 @@ func (s *Stats) processTx(tx cacheSchema.TxResponse) {
 	if s.curStats == nil {
 		log.Info("first tx")
 		s.curStats = &schema.Stats{
-			Date:           t,
+			Date:           truncateToDay(t),
 			LastTxRawID:    tx.RawId,
 			LastTxEverHash: tx.EverHash,
 			Pool:           poolStats,
@@ -199,7 +199,7 @@ func (s *Stats) processTx(tx cacheSchema.TxResponse) {
 				log.Error("Failed to save stats.", "stats date", s.curStats.Date)
 			}
 			s.curStats = &schema.Stats{
-				Date:           t,
+				Date:           truncateToDay(t),
 				LastTxRawID:    tx.RawId,
 				LastTxEverHash: tx.EverHash,
 				Pool:           poolStats,

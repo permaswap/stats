@@ -81,3 +81,6 @@ func getFormatedDateTime(t time.Time) string {
 	return fmt.Sprintf("%s-%s-%s %d:%d:%d", strconv.Itoa(t.Year()), t.Month().String(), strconv.Itoa(t.Day()),
 		t.Hour(), t.Minute(), t.Second())
 }
+func truncateToDay(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+}

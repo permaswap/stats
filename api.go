@@ -1,7 +1,10 @@
 package stats
 
 import (
+	"encoding/json"
+	"errors"
 	"net/http"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -44,4 +47,24 @@ func (s *Stats) getStats(c *gin.Context) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
+	date := c.Query("date")
+	if date == "" {
+		c.JSON(http.StatusBadRequest, errors.New("err_no_param").Error())
+		return
+	}
+	t, _ := time.ParseInLocation("2006-01-02", date, time.Local)
+	statSnapshot, err := s.wdb.FindStatsSnapshot(t)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	stats := schema.Stats{}
+	b := []byte(statSnapshot.Stats)
+	if err := json.Unmarshal(b, &stats); err != nil {
+		c.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, stats)
 }

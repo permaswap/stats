@@ -2,6 +2,7 @@ package stats
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/permaswap/stats/schema"
 	"gorm.io/datatypes"
@@ -18,7 +19,6 @@ func NewWDB(dsn string) *WDB {
 	if err != nil {
 		panic(err)
 	}
-
 	return &WDB{db}
 }
 
@@ -51,4 +51,9 @@ func (w *WDB) SaveStatsSnapshot(stats *schema.Stats, tx *gorm.DB) (err error) {
 	} else {
 		return
 	}
+}
+
+func (w *WDB) FindStatsSnapshot(date time.Time) (statSnapshot *schema.StatsSnapshot, err error) {
+	err = w.db.Model(&schema.StatsSnapshot{}).Where("date = ?", datatypes.Date(date)).First(&statSnapshot).Error
+	return
 }

@@ -2,7 +2,6 @@ package stats
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 	"time"
 
@@ -49,7 +48,7 @@ func (s *Stats) getStats(c *gin.Context) {
 
 	date := c.Query("date")
 	if date == "" {
-		c.JSON(http.StatusBadRequest, errors.New("err_no_param").Error())
+		c.JSON(http.StatusBadRequest, "err_no_param")
 		return
 	}
 	t, _ := time.ParseInLocation("2006-01-02", date, time.Local)

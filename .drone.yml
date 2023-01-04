@@ -10,7 +10,7 @@ platform:
 
 steps:
   - name: build
-    image: golang:1.17-buster
+    image: golang:1.18-buster
     environment:
       SSH_KEY:
         from_secret: ssh_key_github
@@ -24,7 +24,7 @@ steps:
       - chmod 600 /root/.ssh/known_hosts
       - ssh-keyscan -H github.com >> /root/.ssh/known_hosts 2> /dev/null
       - go env -w CGO_ENABLED=0 GOPRIVATE=github.com/everFinance/everpay
-      - go mod tidy -compat=1.17
+      - go mod tidy
       - cd cmd
       - go build -o permastats
     depends_on:
@@ -73,7 +73,7 @@ steps:
       container: permastats
       tag: ${DRONE_COMMIT_SHA}
     depends_on:
-      - publish-dev-stats
+      - publish-dev-permastats
     when:
       branch: [ feature/*,fix/*,develop ]
 

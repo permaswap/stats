@@ -73,7 +73,7 @@ steps:
       container: permastats
       tag: ${DRONE_COMMIT_SHA}
     depends_on:
-      - publish-dev-stats
+      - publish-dev-permastats
     when:
       branch: [ feature/*,fix/*,develop ]
 

@@ -192,6 +192,7 @@ func (s *Stats) processTx(tx cacheSchema.TxResponse) {
 
 			s.curStats.LastTxRawID = tx.RawId
 			s.curStats.LastTxEverHash = tx.EverHash
+			s.curStats.Fee += feeStats
 			s.curStats.TxCount += 1
 		} else {
 			log.Info("next day", "curDate", curDate, "tx date", getFormatedDate(t))

@@ -160,14 +160,16 @@ func (s *Stats) processTx(tx cacheSchema.TxResponse) {
 	if s.curStats == nil {
 		log.Info("first tx")
 		s.curStats = &schema.Stats{
-			Date:           truncateToDay(t),
-			LastTxRawID:    tx.RawId,
-			LastTxEverHash: tx.EverHash,
-			Pool:           poolStats,
-			User:           userStats,
-			Lp:             lpStats,
-			Fee:            feeStats,
-			TxCount:        1,
+			Date:            truncateToDay(t),
+			StartTxRawID:    tx.RawId,
+			StartTxEverHash: tx.EverHash,
+			LastTxRawID:     tx.RawId,
+			LastTxEverHash:  tx.EverHash,
+			Pool:            poolStats,
+			User:            userStats,
+			Lp:              lpStats,
+			Fee:             feeStats,
+			TxCount:         1,
 		}
 	} else {
 		curDate := getFormatedDate(s.curStats.Date)
@@ -200,14 +202,16 @@ func (s *Stats) processTx(tx cacheSchema.TxResponse) {
 				log.Error("Failed to save stats.", "stats date", s.curStats.Date)
 			}
 			s.curStats = &schema.Stats{
-				Date:           truncateToDay(t),
-				LastTxRawID:    tx.RawId,
-				LastTxEverHash: tx.EverHash,
-				Pool:           poolStats,
-				User:           userStats,
-				Lp:             lpStats,
-				Fee:            feeStats,
-				TxCount:        1,
+				Date:            truncateToDay(t),
+				StartTxRawID:    tx.RawId,
+				StartTxEverHash: tx.EverHash,
+				LastTxRawID:     tx.RawId,
+				LastTxEverHash:  tx.EverHash,
+				Pool:            poolStats,
+				User:            userStats,
+				Lp:              lpStats,
+				Fee:             feeStats,
+				TxCount:         1,
 			}
 		}
 	}

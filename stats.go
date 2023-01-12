@@ -345,6 +345,7 @@ func (s *Stats) getStatsFromBundle(nonce int64, bundle *paySchema.Bundle) (
 	}
 	if amount, err := strconv.ParseFloat(feePath.Amount, 64); err == nil {
 		feeStats = amount / math.Pow10(decimals) * price
+		userStats[user] += feeStats
 	}
 	return
 }

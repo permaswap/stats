@@ -19,9 +19,9 @@ while True:
     for u, v in data['user'].items():
         stats[u] = stats.get(u, 0) + v
         total += v
-        i += 1
-
-    print(date)
+    
+    i += 1
+    print(i, date)
     start = start + datetime.timedelta(days=1)
     time.sleep(0.25)
     

@@ -14,7 +14,6 @@ import (
 	paySchema "github.com/everFinance/go-everpay/pay/schema"
 	"github.com/everFinance/go-everpay/sdk"
 	sdkSchema "github.com/everFinance/go-everpay/sdk/schema"
-	"github.com/everFinance/go-everpay/token"
 	"gorm.io/gorm"
 
 	"github.com/gin-gonic/gin"
@@ -30,14 +29,11 @@ type Stats struct {
 	routerAddress   string
 	startTxRawID    int64
 	startTxEverHash string
-	tokens          map[string]*token.Token
-	pools           map[string]*schema.Pool
-
-	everClient *sdk.Client
-	engine     *gin.Engine
-	server     *http.Server
-	wdb        *WDB
-	scheduler  *gocron.Scheduler
+	everClient      *sdk.Client
+	engine          *gin.Engine
+	server          *http.Server
+	wdb             *WDB
+	scheduler       *gocron.Scheduler
 
 	sub *sdk.SubscribeTx
 	//prevStats []*schema.Stats
@@ -48,11 +44,6 @@ type Stats struct {
 }
 
 func New(chainID int64, routerAddr string, startTxRawID int64, startTxEverHash string, client *sdk.Client, dsn string) *Stats {
-	tokens, err := client.GetTokens()
-	if err != nil {
-		log.Error("failed to get tokens", "err", err)
-		panic(err)
-	}
 	return &Stats{
 		chainID:         chainID,
 		wdb:             NewWDB(dsn),
@@ -61,8 +52,6 @@ func New(chainID int64, routerAddr string, startTxRawID int64, startTxEverHash s
 		startTxRawID:    startTxRawID,
 		startTxEverHash: startTxEverHash,
 		everClient:      client,
-		tokens:          tokens,
-		pools:           InitPools(chainID),
 		scheduler:       gocron.NewScheduler(time.UTC),
 	}
 }
@@ -96,8 +85,8 @@ func (s *Stats) Close() {
 	s.sub.Unsubscribe()
 }
 
-func (s *Stats) findPool(x, y string) (poolID string) {
-	for poolID, pool := range s.pools {
+func (s *Stats) findPool(pools map[string]*schema.Pool, x, y string) (poolID string) {
+	for poolID, pool := range pools {
 		if pool.TokenXTag == x && pool.TokenYTag == y {
 			return poolID
 		}
@@ -236,6 +225,9 @@ func (s *Stats) getStatsFromBundle(nonce int64, bundle *paySchema.Bundle) (
 	userStats map[string]float64,
 	feeStats float64) {
 
+	pools := getPools(nonce, s.chainID)
+	tokens := getTokens(nonce, s.chainID)
+
 	poolStats = map[string]float64{}
 	lpStats = map[string]map[string]float64{}
 	lpRewardStats = map[string]map[string]float64{}
@@ -257,23 +249,23 @@ func (s *Stats) getStatsFromBundle(nonce int64, bundle *paySchema.Bundle) (
 		}
 		second = item
 
-		poolID := s.findPool(first.Tag, second.Tag)
+		poolID := s.findPool(pools, first.Tag, second.Tag)
 		if poolID == "" {
 			log.Error("failed to find pool", "x", first.Tag, "y", second.Tag)
 			return nil, nil, nil, nil, 0
 		}
-		pool, ok := s.pools[poolID]
+		pool, ok := pools[poolID]
 		if !ok {
 			log.Error("failed to find the info of pool", "x", first.Tag, "y", second.Tag)
 			return nil, nil, nil, nil, 0
 		}
 
-		_, ok = s.tokens[first.Tag]
+		_, ok = tokens[first.Tag]
 		if !ok {
 			log.Error("failed to find token", "tokenTag", first.Tag)
 			return nil, nil, nil, nil, 0
 		}
-		_, ok = s.tokens[second.Tag]
+		_, ok = tokens[second.Tag]
 		if !ok {
 			log.Error("failed to find token", "tokenTag", first.Tag)
 			return nil, nil, nil, nil, 0
@@ -287,7 +279,7 @@ func (s *Stats) getStatsFromBundle(nonce int64, bundle *paySchema.Bundle) (
 		var amount float64
 		var decimals int
 
-		symbol := s.tokens[first.Tag].Symbol
+		symbol := tokens[first.Tag].Symbol
 		price, ok := prices[symbol]
 		if !ok {
 			price = MustGetTokenPrice(symbol, "USDC", strconv.FormatInt(nonce, 10))
@@ -295,7 +287,7 @@ func (s *Stats) getStatsFromBundle(nonce int64, bundle *paySchema.Bundle) (
 		prices[symbol] = price
 
 		amount, _ = strconv.ParseFloat(first.Amount, 64)
-		decimals = s.tokens[first.Tag].Decimals
+		decimals = tokens[first.Tag].Decimals
 		volume := amount / math.Pow10(decimals) * price
 
 		poolFeeRatio, _ := strconv.ParseFloat(pool.FeeRatio, 64)
@@ -348,13 +340,13 @@ func (s *Stats) getStatsFromBundle(nonce int64, bundle *paySchema.Bundle) (
 			break
 		}
 	}
-	symbol := s.tokens[tokenIn].Symbol
+	symbol := tokens[tokenIn].Symbol
 	price, ok := prices[symbol]
 	if !ok {
 		price = MustGetTokenPrice(symbol, "USDC", strconv.FormatInt(nonce, 10))
 	}
 	prices[symbol] = price
-	decimals := s.tokens[tokenIn].Decimals
+	decimals := tokens[tokenIn].Decimals
 	userStats[user] = amountIn / math.Pow10(decimals) * price
 
 	if len(bundle.Items)%2 == 0 {
@@ -362,8 +354,8 @@ func (s *Stats) getStatsFromBundle(nonce int64, bundle *paySchema.Bundle) (
 	}
 
 	feePath := bundle.Items[len(bundle.Items)-1]
-	if s.tokens[tokenIn].Tag() != feePath.Tag {
-		log.Error("invalid feepath token", "feepath tokenTag", feePath.Tag, "tokenIn", s.tokens[tokenIn].Tag())
+	if tokens[tokenIn].Tag() != feePath.Tag {
+		log.Error("invalid feepath token", "feepath tokenTag", feePath.Tag, "tokenIn", tokens[tokenIn].Tag())
 		return
 	}
 	if amount, err := strconv.ParseFloat(feePath.Amount, 64); err == nil {

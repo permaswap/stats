@@ -36,9 +36,9 @@ func (s *Stats) getInfo(c *gin.Context) {
 		RouterAddress:   s.routerAddress,
 		StartTxRawID:    s.startTxRawID,
 		StartTxEverHash: s.startTxEverHash,
-		Tokens:          s.tokens,
-		Pools:           s.pools,
-		CurStats:        s.curStats,
+		//Tokens:          s.tokens,
+		//Pools:           s.pools,
+		CurStats: s.curStats,
 	})
 }
 

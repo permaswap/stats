@@ -147,9 +147,9 @@ func (s *Stats) processTx(tx cacheSchema.TxResponse) {
 		return
 	}
 
-	poolStats, lpStats, userStats, feeStats := s.getStatsFromBundle(tx.Nonce, &bundleData.Bundle.Bundle)
+	poolStats, lpStats, lpRewardStats, userStats, feeStats := s.getStatsFromBundle(tx.Nonce, &bundleData.Bundle.Bundle)
 
-	if poolStats == nil || lpStats == nil || userStats == nil {
+	if poolStats == nil || lpStats == nil || lpRewardStats == nil || userStats == nil {
 		log.Error("failed to get stats")
 		return
 	}
@@ -168,6 +168,7 @@ func (s *Stats) processTx(tx cacheSchema.TxResponse) {
 			Pool:            poolStats,
 			User:            userStats,
 			Lp:              lpStats,
+			LpReward:        lpRewardStats,
 			Fee:             feeStats,
 			TxCount:         1,
 		}
@@ -192,6 +193,16 @@ func (s *Stats) processTx(tx cacheSchema.TxResponse) {
 				}
 			}
 
+			for accid := range lpRewardStats {
+				if _, ok := s.curStats.LpReward[accid]; ok {
+					for poolID, r2 := range lpRewardStats[accid] {
+						s.curStats.LpReward[accid][poolID] += r2
+					}
+				} else {
+					s.curStats.LpReward[accid] = lpRewardStats[accid]
+				}
+			}
+
 			s.curStats.LastTxRawID = tx.RawId
 			s.curStats.LastTxEverHash = tx.EverHash
 			s.curStats.Fee += feeStats
@@ -210,6 +221,7 @@ func (s *Stats) processTx(tx cacheSchema.TxResponse) {
 				Pool:            poolStats,
 				User:            userStats,
 				Lp:              lpStats,
+				LpReward:        lpRewardStats,
 				Fee:             feeStats,
 				TxCount:         1,
 			}
@@ -220,11 +232,13 @@ func (s *Stats) processTx(tx cacheSchema.TxResponse) {
 func (s *Stats) getStatsFromBundle(nonce int64, bundle *paySchema.Bundle) (
 	poolStats map[string]float64,
 	lpStats map[string]map[string]float64,
+	lpRewardStats map[string]map[string]float64,
 	userStats map[string]float64,
 	feeStats float64) {
 
 	poolStats = map[string]float64{}
 	lpStats = map[string]map[string]float64{}
+	lpRewardStats = map[string]map[string]float64{}
 	userStats = map[string]float64{}
 	feeStats = 0
 
@@ -246,18 +260,23 @@ func (s *Stats) getStatsFromBundle(nonce int64, bundle *paySchema.Bundle) (
 		poolID := s.findPool(first.Tag, second.Tag)
 		if poolID == "" {
 			log.Error("failed to find pool", "x", first.Tag, "y", second.Tag)
-			return nil, nil, nil, 0
+			return nil, nil, nil, nil, 0
+		}
+		pool, ok := s.pools[poolID]
+		if !ok {
+			log.Error("failed to find the info of pool", "x", first.Tag, "y", second.Tag)
+			return nil, nil, nil, nil, 0
 		}
 
-		_, ok := s.tokens[first.Tag]
+		_, ok = s.tokens[first.Tag]
 		if !ok {
 			log.Error("failed to find token", "tokenTag", first.Tag)
-			return nil, nil, nil, 0
+			return nil, nil, nil, nil, 0
 		}
 		_, ok = s.tokens[second.Tag]
 		if !ok {
 			log.Error("failed to find token", "tokenTag", first.Tag)
-			return nil, nil, nil, 0
+			return nil, nil, nil, nil, 0
 		}
 
 		lpAccID := first.From
@@ -279,11 +298,15 @@ func (s *Stats) getStatsFromBundle(nonce int64, bundle *paySchema.Bundle) (
 		decimals = s.tokens[first.Tag].Decimals
 		volume := amount / math.Pow10(decimals) * price
 
+		poolFeeRatio, _ := strconv.ParseFloat(pool.FeeRatio, 64)
+		lpReward := volume * poolFeeRatio
 		poolStats[poolID] += volume
 		if _, ok := lpStats[lpAccID]; ok {
 			lpStats[lpAccID][poolID] += volume
+			lpRewardStats[lpAccID][poolID] += lpReward
 		} else {
 			lpStats[lpAccID] = map[string]float64{poolID: volume}
+			lpRewardStats[lpAccID] = map[string]float64{poolID: lpReward}
 		}
 
 		if first.From == user {

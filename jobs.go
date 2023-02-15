@@ -8,6 +8,7 @@ import (
 
 func (s *Stats) runJobs() {
 	s.scheduler.Every(10).Minute().SingletonMode().Do(s.aggregateStats)
+	s.scheduler.StartAsync()
 }
 
 func (s *Stats) aggregateStats() {

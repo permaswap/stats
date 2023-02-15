@@ -81,8 +81,6 @@ func (s *Stats) Run(port string) {
 	}()
 
 	go s.runAPI(port)
-
-	s.aggregateStats()
 	go s.runJobs()
 }
 

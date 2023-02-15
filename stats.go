@@ -81,7 +81,7 @@ func (s *Stats) Run(port string) {
 	}()
 
 	go s.runAPI(port)
-	//go s.runJobs()
+	go s.runJobs()
 }
 
 func (s *Stats) Close() {

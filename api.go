@@ -74,6 +74,11 @@ func (s *Stats) getAggregate(c *gin.Context) {
 	s.lockAggregate.RLock()
 	defer s.lockAggregate.RUnlock()
 
+	if s.aggregate == nil {
+		c.JSON(http.StatusOK, schema.AggregateRes{})
+		return
+	}
+
 	aggregateRes := schema.AggregateRes{
 		UserVolume: float64(0),
 		LpVolume:   float64(0),
@@ -93,19 +98,20 @@ func (s *Stats) getAggregate(c *gin.Context) {
 		}
 	}
 
-	userAggregate := schema.UserAggregate{
-		Address:    "",
-		LpVolume:   float64(0),
-		LpReward:   float64(0),
-		UserVolume: float64(0),
-	}
 	if accid := c.Query("accid"); accid != "" {
 		_, accid, err := account.IDCheck(accid)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, err.Error())
 			return
 		}
-		userAggregate.Address = accid
+
+		userAggregate := schema.UserAggregate{
+			Address:    accid,
+			LpVolume:   float64(0),
+			LpReward:   float64(0),
+			UserVolume: float64(0),
+		}
+
 		if v, ok := s.aggregate.Stats.User[accid]; ok {
 			userAggregate.UserVolume = v
 		}
@@ -114,7 +120,7 @@ func (s *Stats) getAggregate(c *gin.Context) {
 				userAggregate.LpVolume += v2
 			}
 		}
-		if v, ok := s.aggregate.Stats.Lp[accid]; ok {
+		if v, ok := s.aggregate.Stats.LpReward[accid]; ok {
 			for _, v2 := range v {
 				userAggregate.LpReward += v2
 			}
@@ -122,6 +128,6 @@ func (s *Stats) getAggregate(c *gin.Context) {
 		aggregateRes.User = userAggregate
 	}
 
-	c.JSON(http.StatusOK, userAggregate)
+	c.JSON(http.StatusOK, aggregateRes)
 
 }

@@ -16,6 +16,12 @@ type Stats struct {
 	TxCount         int64                         `json:"txCount"`  // txs count
 }
 
+type Aggregate struct {
+	Start time.Time `json:"stat"`
+	End   time.Time `json:"end"`
+	Stats Stats     `json:"stats"`
+}
+
 func (s *Stats) TotalUserVolume() (total float64) {
 	for _, v := range s.User {
 		total += v

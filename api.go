@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/everFinance/everpay/account"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/permaswap/stats/schema"
@@ -17,6 +18,7 @@ func (s *Stats) runAPI(port string) {
 	// api
 	e.GET("/info", s.getInfo)
 	e.GET("/stats", s.getStats)
+	e.GET("/aggregate", s.getAggregate)
 
 	s.server = &http.Server{
 		Addr:    port,
@@ -66,4 +68,60 @@ func (s *Stats) getStats(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, stats)
+}
+
+func (s *Stats) getAggregate(c *gin.Context) {
+	s.lockAggregate.RLock()
+	defer s.lockAggregate.RUnlock()
+
+	aggregateRes := schema.AggregateRes{
+		UserVolume: float64(0),
+		LpVolume:   float64(0),
+		LpReward:   float64(0),
+	}
+	for _, v := range s.aggregate.Stats.User {
+		aggregateRes.UserVolume += v
+	}
+	for _, v := range s.aggregate.Stats.Lp {
+		for _, v2 := range v {
+			aggregateRes.LpVolume += v2
+		}
+	}
+	for _, v := range s.aggregate.Stats.LpReward {
+		for _, v2 := range v {
+			aggregateRes.LpReward += v2
+		}
+	}
+
+	userAggregate := schema.UserAggregate{
+		Address:    "",
+		LpVolume:   float64(0),
+		LpReward:   float64(0),
+		UserVolume: float64(0),
+	}
+	if accid := c.Query("accid"); accid != "" {
+		_, accid, err := account.IDCheck(accid)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			return
+		}
+		userAggregate.Address = accid
+		if v, ok := s.aggregate.Stats.User[accid]; ok {
+			userAggregate.UserVolume = v
+		}
+		if v, ok := s.aggregate.Stats.Lp[accid]; ok {
+			for _, v2 := range v {
+				userAggregate.LpVolume += v2
+			}
+		}
+		if v, ok := s.aggregate.Stats.Lp[accid]; ok {
+			for _, v2 := range v {
+				userAggregate.LpReward += v2
+			}
+		}
+		aggregateRes.User = userAggregate
+	}
+
+	c.JSON(http.StatusOK, userAggregate)
+
 }

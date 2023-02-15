@@ -41,6 +41,9 @@ type Stats struct {
 	// lock to r/w curStats
 	lock     sync.RWMutex
 	curStats *schema.Stats
+
+	lockAggregate sync.RWMutex
+	aggregate     *schema.Aggregate
 }
 
 func New(chainID int64, routerAddr string, startTxRawID int64, startTxEverHash string, client *sdk.Client, dsn string) *Stats {

@@ -31,6 +31,11 @@ func (w *WDB) LoadStats() (statSnapshot *schema.StatsSnapshot, err error) {
 	return
 }
 
+func (w *WDB) LoadAllStats() (statSnapshots []*schema.StatsSnapshot, err error) {
+	err = w.db.Order("date desc").Find(&statSnapshots).Error
+	return
+}
+
 func (w *WDB) SaveStatsSnapshot(stats *schema.Stats, tx *gorm.DB) (err error) {
 	if tx == nil {
 		tx = w.db

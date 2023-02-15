@@ -13,3 +13,17 @@ type InfoRes struct {
 	Pools           map[string]*Pool        `json:"pool"`
 	CurStats        *Stats                  `json:"curStats"`
 }
+
+type UserAggregate struct {
+	Address    string  `json:"address"`
+	LpVolume   float64 `json:"lpVolume"`
+	LpReward   float64 `json:"lpReward"`
+	UserVolume float64 `json:"userVolume"`
+}
+
+type AggregateRes struct {
+	LpVolume   float64 `json:"lpVolume"`
+	LpReward   float64 `json:"lpReward"`
+	UserVolume float64 `json:"userVolume"`
+	User       UserAggregate
+}

@@ -16,8 +16,8 @@ type UserAggregate struct {
 }
 
 type AggregateRes struct {
-	LpVolume   float64 `json:"lpVolume"`
-	LpReward   float64 `json:"lpReward"`
-	UserVolume float64 `json:"userVolume"`
-	User       UserAggregate
+	LpVolume   float64       `json:"lpVolume"`
+	LpReward   float64       `json:"lpReward"`
+	UserVolume float64       `json:"userVolume"`
+	User       UserAggregate `json:"user"`
 }

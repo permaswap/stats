@@ -49,12 +49,9 @@ func MustGetTokenPriceByRedstone(tokenSymbol string, currency string, timestamp 
 	for {
 		price, err := GetTokenPriceByRedstone(tokenSymbol, "USDC", timestamp)
 		if err == nil {
-			if err != nil {
-				log.Error("failed to open price log", "error", err)
-			}
 			return price
 		}
-		log.Warn("failed to get price from redstone", "err", err)
+		log.Warn("failed to get price from redstone", "err", err, "tokenSymbol", tokenSymbol, "currency", currency, "timestamp", timestamp)
 
 		time.Sleep(1 * time.Second)
 	}

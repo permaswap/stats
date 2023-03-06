@@ -228,6 +228,9 @@ func (s *Stats) getStatsFromBundle(nonce int64, bundle *paySchema.Bundle) (
 	userStats map[string]float64,
 	feeStats float64) {
 
+	t := time.Unix(nonce/1000, 0)
+	date := getFormatedDate2(t)
+
 	pools := getPools(nonce, s.chainID)
 	tokens := getTokens(nonce, s.chainID)
 
@@ -285,7 +288,11 @@ func (s *Stats) getStatsFromBundle(nonce int64, bundle *paySchema.Bundle) (
 		symbol := tokens[first.Tag].Symbol
 		price, ok := prices[symbol]
 		if !ok {
-			price = MustGetTokenPrice(symbol, "USDC", strconv.FormatInt(nonce, 10))
+			price = GetTokenPrice(symbol, "USDC", strconv.FormatInt(nonce, 10), date)
+			if price == 0.0 {
+				log.Error("failed to get token price", "symbol", symbol)
+				return
+			}
 		}
 		prices[symbol] = price
 
@@ -346,7 +353,11 @@ func (s *Stats) getStatsFromBundle(nonce int64, bundle *paySchema.Bundle) (
 	symbol := tokens[tokenIn].Symbol
 	price, ok := prices[symbol]
 	if !ok {
-		price = MustGetTokenPrice(symbol, "USDC", strconv.FormatInt(nonce, 10))
+		price = GetTokenPrice(symbol, "USDC", strconv.FormatInt(nonce, 10), date)
+		if price == 0.0 {
+			log.Error("failed to get token price", "symbol", symbol)
+			return
+		}
 	}
 	prices[symbol] = price
 	decimals := tokens[tokenIn].Decimals

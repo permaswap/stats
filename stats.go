@@ -228,8 +228,7 @@ func (s *Stats) getStatsFromBundle(nonce int64, bundle *paySchema.Bundle) (
 	userStats map[string]float64,
 	feeStats float64) {
 
-	t := time.Unix(nonce/1000, 0)
-	date := getFormatedDate2(t)
+	date := getFormatedDate2(nonce / 1000)
 
 	pools := getPools(nonce, s.chainID)
 	tokens := getTokens(nonce, s.chainID)

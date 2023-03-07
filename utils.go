@@ -67,7 +67,26 @@ type CoingeckoData struct {
 	} `json:"market_data"`
 }
 
+var coingeckoPrice = map[string]map[string]float64{}
+
 func GetTokenPriceByCoingecko(token, date string) (float64, error) {
+	price := 0.0
+
+	if token == "usdc" {
+		return 1.0, nil
+	}
+
+	if token == "usdt" {
+		return 1.0, nil
+	}
+
+	if _, ok := coingeckoPrice[token]; ok {
+		if price, ok := coingeckoPrice[token][date]; ok {
+			log.Info("get price from cache", "token", token, "price", price)
+			return price, nil
+		}
+	}
+
 	url := fmt.Sprintf("https://api.coingecko.com/api/v3/coins/%s/history?date=%s", token, date)
 
 	resp, err := http.Get(url)
@@ -86,7 +105,31 @@ func GetTokenPriceByCoingecko(token, date string) (float64, error) {
 	if err != nil {
 		return 0.0, err
 	}
-	return data.MarketData.CurrentPrice.USD, nil
+	price = data.MarketData.CurrentPrice.USD
+
+	if _, ok := coingeckoPrice[token]; ok {
+		coingeckoPrice[token][date] = price
+	} else {
+		coingeckoPrice[token] = map[string]float64{date: price}
+	}
+
+	return price, nil
+}
+
+func GetTokenPriceByRedstoneWithRetry(tokenSymbol string, currency string, timestamp string, retry int64) (float64, error) {
+	tried := int64(0)
+	for {
+		price, err := GetTokenPriceByRedstone(tokenSymbol, "USDC", timestamp)
+		if err == nil {
+			return price, nil
+		}
+		if tried >= retry {
+			log.Warn("failed to get price from redstone", "err", err, "tokenSymbol", tokenSymbol, "currency", currency, "timestamp", timestamp)
+			return 0.0, fmt.Errorf("failed to get price from redstone")
+		}
+		time.Sleep(1 * time.Second)
+		tried++
+	}
 }
 
 func MustGetTokenPriceByRedstone(tokenSymbol string, currency string, timestamp string) float64 {
@@ -124,11 +167,12 @@ func GetTokenPrice(tokenSymbol string, currency string, timestamp string, date s
 	} else if tokenSymbol == "tARDRIVE" {
 		price = 3.5
 	} else {
-		price, err = GetTokenPriceByRedstone(tokenSymbol, "USDC", timestamp)
+		price, err = GetTokenPriceByRedstoneWithRetry(tokenSymbol, "USDC", timestamp, 5)
 		if err != nil {
 			tokenName := GetTokenName(tokenSymbol)
 			if tokenName != "" {
 				price, _ = GetTokenPriceByCoingecko(tokenName, date)
+				log.Info("get token price from coingecko", "tokenSymbol", tokenSymbol, "price", price, "date", date)
 			}
 		}
 	}
@@ -139,8 +183,9 @@ func getFormatedDate(t time.Time) string {
 	return fmt.Sprintf("%s-%s-%s", strconv.Itoa(t.Year()), t.Month().String(), strconv.Itoa(t.Day()))
 }
 
-func getFormatedDate2(t time.Time) string {
-	return fmt.Sprintf("%s-%s-%s", strconv.Itoa(t.Day()), t.Month().String(), strconv.Itoa(t.Year()))
+func getFormatedDate2(timestamp int64) string {
+	date := time.Unix(timestamp, 0).Format("02-01-2006")
+	return date
 }
 
 func getFormatedDateTime(t time.Time) string {

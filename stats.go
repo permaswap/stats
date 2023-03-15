@@ -284,7 +284,12 @@ func (s *Stats) getStatsFromBundle(nonce int64, bundle *paySchema.Bundle) (
 		var amount float64
 		var decimals int
 
+		useFirst := true
 		symbol := tokens[first.Tag].Symbol
+		if symbol == "ARDRIVE" {
+			symbol = tokens[second.Tag].Symbol
+			useFirst = false
+		}
 		price, ok := prices[symbol]
 		if !ok {
 			price = GetTokenPrice(symbol, "USDC", strconv.FormatInt(nonce, 10), date)
@@ -295,10 +300,16 @@ func (s *Stats) getStatsFromBundle(nonce int64, bundle *paySchema.Bundle) (
 		}
 		prices[symbol] = price
 
-		amount, _ = strconv.ParseFloat(first.Amount, 64)
-		decimals = tokens[first.Tag].Decimals
+		if useFirst {
+			amount, _ = strconv.ParseFloat(first.Amount, 64)
+			decimals = tokens[first.Tag].Decimals
+		} else {
+			amount, _ = strconv.ParseFloat(second.Amount, 64)
+			decimals = tokens[second.Tag].Decimals
+		}
 		volume := amount / math.Pow10(decimals) * price
 
+		// todo: when feeratio change
 		poolFeeRatio, _ := strconv.ParseFloat(pool.FeeRatio, 64)
 		lpReward := volume * poolFeeRatio
 		poolStats[poolID] += volume
@@ -349,7 +360,23 @@ func (s *Stats) getStatsFromBundle(nonce int64, bundle *paySchema.Bundle) (
 			break
 		}
 	}
+
+	tokenOut := ""
+	amountOut := float64(0)
+	for k, v := range userInOut {
+		if v.Cmp(zero) == 1 {
+			tokenOut = k
+			amountOut, _ = new(big.Float).SetInt(v).Float64()
+			break
+		}
+	}
+
+	useTokenIn := true
 	symbol := tokens[tokenIn].Symbol
+	if symbol == "ARDRIVE" {
+		useTokenIn = false
+		symbol = tokens[tokenOut].Symbol
+	}
 	price, ok := prices[symbol]
 	if !ok {
 		price = GetTokenPrice(symbol, "USDC", strconv.FormatInt(nonce, 10), date)
@@ -359,8 +386,15 @@ func (s *Stats) getStatsFromBundle(nonce int64, bundle *paySchema.Bundle) (
 		}
 	}
 	prices[symbol] = price
-	decimals := tokens[tokenIn].Decimals
-	userStats[user] = amountIn / math.Pow10(decimals) * price
+
+	var decimals int
+	if useTokenIn {
+		decimals = tokens[tokenIn].Decimals
+		userStats[user] = amountIn / math.Pow10(decimals) * price
+	} else {
+		decimals = tokens[tokenOut].Decimals
+		userStats[user] = amountOut / math.Pow10(decimals) * price
+	}
 
 	if len(bundle.Items)%2 == 0 {
 		return
@@ -372,7 +406,8 @@ func (s *Stats) getStatsFromBundle(nonce int64, bundle *paySchema.Bundle) (
 		return
 	}
 	if amount, err := strconv.ParseFloat(feePath.Amount, 64); err == nil {
-		feeStats = amount / math.Pow10(decimals) * price
+		ratio := amount / amountIn
+		feeStats = userStats[user] * ratio
 		userStats[user] += feeStats
 	}
 	return

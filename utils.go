@@ -151,6 +151,8 @@ func MustGetTokenPrice(symbol string, currency string, timestamp string) (price 
 		price = MustGetTokenPriceByRedstone("AR", "USDC", timestamp)
 	} else if symbol == "tARDRIVE" {
 		price = 3.5
+	} else if symbol == "ACNH" {
+		price = 0.147
 	} else {
 		price = MustGetTokenPriceByRedstone(symbol, "USDC", timestamp)
 	}
@@ -166,6 +168,8 @@ func GetTokenPrice(tokenSymbol string, currency string, timestamp string, date s
 		price = 10.0
 	} else if tokenSymbol == "tARDRIVE" {
 		price = 3.5
+	} else if tokenSymbol == "ACNH" {
+		price = 0.147
 	} else {
 		price, err = GetTokenPriceByRedstoneWithRetry(tokenSymbol, "USDC", timestamp, 3)
 		if err != nil {

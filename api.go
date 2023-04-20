@@ -49,22 +49,66 @@ func (s *Stats) getStats(c *gin.Context) {
 	defer s.lock.RUnlock()
 
 	date := c.Query("date")
-	if date == "" {
+	if date != "" {
+		t, _ := time.ParseInLocation("2006-01-02", date, time.Local)
+		statSnapshot, err := s.wdb.FindStatsSnapshot(t)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			return
+		}
+
+		stats := schema.Stats{}
+		b := []byte(statSnapshot.Stats)
+		if err := json.Unmarshal(b, &stats); err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			return
+		}
+
+		c.JSON(http.StatusOK, stats)
+		return
+	}
+
+	startStr := c.DefaultQuery("start", "")
+	if startStr != "" {
 		c.JSON(http.StatusBadRequest, "err_no_param")
 		return
 	}
-	t, _ := time.ParseInLocation("2006-01-02", date, time.Local)
-	statSnapshot, err := s.wdb.FindStatsSnapshot(t)
+	start, err := time.ParseInLocation("2006-01-02", startStr, time.Local)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, "err_invalid_param")
+		return
+	}
+	endStr := c.DefaultQuery("end", "")
+	if endStr != "" {
+		c.JSON(http.StatusBadRequest, "err_no_param")
+		return
+	}
+	end, err := time.ParseInLocation("2006-01-02", endStr, time.Local)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, "err_invalid_param")
+		return
+	}
+	diff := end.Sub(start)
+	if diff.Hours() < 24 || diff.Hours() > 24*30 {
+		c.JSON(http.StatusBadRequest, "err_invalid_param")
+		return
+	}
+
+	statSnapshots, err := s.wdb.FindStatsSnapshots(start, end)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
-	stats := schema.Stats{}
-	b := []byte(statSnapshot.Stats)
-	if err := json.Unmarshal(b, &stats); err != nil {
-		c.JSON(http.StatusBadRequest, err.Error())
-		return
+	stats := []schema.Stats{}
+	for _, statSnapshot := range statSnapshots {
+		s := schema.Stats{}
+		b := []byte(statSnapshot.Stats)
+		if err := json.Unmarshal(b, &s); err != nil {
+			c.JSON(http.StatusBadRequest, err.Error())
+			return
+		}
+		stats = append(stats, s)
 	}
 
 	c.JSON(http.StatusOK, stats)

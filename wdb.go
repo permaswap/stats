@@ -62,3 +62,8 @@ func (w *WDB) FindStatsSnapshot(date time.Time) (statSnapshot *schema.StatsSnaps
 	err = w.db.Model(&schema.StatsSnapshot{}).Where("date = ?", datatypes.Date(date)).First(&statSnapshot).Error
 	return
 }
+
+func (w *WDB) FindStatsSnapshots(start, end time.Time) (statSnapshots []*schema.StatsSnapshot, err error) {
+	err = w.db.Model(&schema.StatsSnapshot{}).Where("date BETWEEN ? AND ?", start, end).Find(&statSnapshots).Error
+	return
+}

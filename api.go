@@ -69,7 +69,7 @@ func (s *Stats) getStats(c *gin.Context) {
 	}
 
 	startStr := c.DefaultQuery("start", "")
-	if startStr != "" {
+	if startStr == "" {
 		c.JSON(http.StatusBadRequest, "err_no_param")
 		return
 	}
@@ -79,7 +79,7 @@ func (s *Stats) getStats(c *gin.Context) {
 		return
 	}
 	endStr := c.DefaultQuery("end", "")
-	if endStr != "" {
+	if endStr == "" {
 		c.JSON(http.StatusBadRequest, "err_no_param")
 		return
 	}

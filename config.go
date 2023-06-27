@@ -31,6 +31,8 @@ var acnh = token.New(
 
 var ans = token.New("0x937EFa4a5Ff9d65785691b70a1136aAf8aDA7e62", "ANS", "ethereum", "1", 18, []tokSchema.TargetChain{})
 
+var u = token.New("KTzTXT_ANmF84fWEKHzWURD1LWd9QaFR9yfYUwH2Lxw", "U", "arweave", "0", 6, []tokSchema.TargetChain{})
+
 var eth_usdc = &schema.Pool{
 	TokenXTag: "ethereum-eth-0x0000000000000000000000000000000000000000",
 	TokenYTag: "ethereum-usdc-0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
@@ -82,6 +84,12 @@ var usdc_acnh = &schema.Pool{
 var ar_ans = &schema.Pool{
 	TokenXTag: "arweave,ethereum-ar-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,0x4fadc7a98f2dc96510e42dd1a74141eeae0c1543",
 	TokenYTag: "ethereum-ans-0x937efa4a5ff9d65785691b70a1136aaf8ada7e62",
+	FeeRatio:  schema.Fee003,
+}
+
+var ar_u = &schema.Pool{
+	TokenXTag: "arweave,ethereum-ar-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA,0x4fadc7a98f2dc96510e42dd1a74141eeae0c1543",
+	TokenYTag: "arweave-u-KTzTXT_ANmF84fWEKHzWURD1LWd9QaFR9yfYUwH2Lxw",
 	FeeRatio:  schema.Fee003,
 }
 
@@ -139,6 +147,7 @@ func getPools(timestamp int64, chainID int64) (pools map[string]*schema.Pool) {
 				ar_ardrive.ID(): ar_ardrive,
 				usdc_acnh.ID():  usdc_acnh,
 				ar_ans.ID():     ar_ans,
+				ar_u.ID():       ar_u,
 			}
 
 		case 5:
@@ -164,7 +173,7 @@ func getTokens(timestamp int64, chainID int64) (tokens map[string]*token.Token) 
 	if timestamp >= 1670774400000 {
 		switch chainID {
 		case 1: // everPay mainnet{
-			tokenList = []*token.Token{ar, eth, usdc, usdt, ardrive, acnh, ans}
+			tokenList = []*token.Token{ar, eth, usdc, usdt, ardrive, acnh, ans, u}
 		case 5: // test network
 			tokenList = []*token.Token{tar_tt, tusdc_tt, tardrive_tt, acnh_tt}
 		default:

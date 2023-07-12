@@ -286,7 +286,7 @@ func (s *Stats) getStatsFromBundle(nonce int64, bundle *paySchema.Bundle) (
 
 		useFirst := true
 		symbol := tokens[first.Tag].Symbol
-		if symbol == "ARDRIVE" || symbol == "ANS" {
+		if symbol == "U" || symbol == "STAMP" {
 			symbol = tokens[second.Tag].Symbol
 			useFirst = false
 		}
@@ -373,7 +373,7 @@ func (s *Stats) getStatsFromBundle(nonce int64, bundle *paySchema.Bundle) (
 
 	useTokenIn := true
 	symbol := tokens[tokenIn].Symbol
-	if symbol == "ARDRIVE" || symbol == "ANS" {
+	if symbol == "U" || symbol == "STAMP" {
 		useTokenIn = false
 		symbol = tokens[tokenOut].Symbol
 	}

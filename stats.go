@@ -44,6 +44,8 @@ type Stats struct {
 
 	lockAggregate sync.RWMutex
 	aggregate     *schema.Aggregate
+
+	processed map[string]bool
 }
 
 func New(chainID int64, routerAddr string, startTxRawID int64, startTxEverHash string, client *sdk.Client, dsn string) *Stats {
@@ -56,6 +58,7 @@ func New(chainID int64, routerAddr string, startTxRawID int64, startTxEverHash s
 		startTxEverHash: startTxEverHash,
 		everClient:      client,
 		scheduler:       gocron.NewScheduler(time.UTC),
+		processed:       map[string]bool{},
 	}
 }
 
@@ -64,10 +67,18 @@ func (s *Stats) Run(port string) {
 
 	s.curStats = s.loadCurStats()
 	startCursor := s.startTxRawID
-	if s.curStats != nil && s.curStats.LastTxRawID > startCursor {
-		startCursor = s.curStats.LastTxRawID
+	if s.curStats != nil {
+		tx, err := s.everClient.TxByHash(s.curStats.LastTxEverHash)
+		if err != nil {
+			panic(err)
+		}
+		lastRawID := tx.Tx.RawId
+		log.Info("load last stats", "lastRawID from everpay", lastRawID, "lastRawID from db", s.curStats.LastTxRawID, "lastTxEverHash", s.curStats.LastTxEverHash)
+		if lastRawID > startCursor {
+			startCursor = s.curStats.LastTxRawID
+		}
 	}
-	log.Info("running", "startTxRawID", startCursor, "curStats", s.curStats)
+	log.Info("running", "startTxEverHash", s.startTxEverHash, "startTxRawID", startCursor, "curStats", s.curStats)
 
 	s.sub = s.everClient.SubscribeTxs(sdkSchema.FilterQuery{
 		StartCursor: startCursor,
@@ -120,7 +131,13 @@ func (s *Stats) loadCurStats() (curStats *schema.Stats) {
 func (s *Stats) processTx(tx cacheSchema.TxResponse) {
 
 	t := time.Unix(tx.Nonce/1000, 0)
+	if s.processed[tx.EverHash] {
+		return
+	} else {
+		s.processed[tx.EverHash] = true
+	}
 	log.Info("process new tx:", "RawId", tx.RawId, "EverHash", tx.EverHash)
+
 	bundleData := paySchema.BundleData{}
 	err := json.Unmarshal([]byte(tx.Data), &bundleData)
 	if err != nil {
@@ -150,7 +167,6 @@ func (s *Stats) processTx(tx cacheSchema.TxResponse) {
 	defer s.lock.Unlock()
 
 	if s.curStats == nil {
-		log.Info("first tx")
 		s.curStats = &schema.Stats{
 			Date:            truncateToDay(t),
 			StartTxRawID:    tx.RawId,
@@ -286,7 +302,7 @@ func (s *Stats) getStatsFromBundle(nonce int64, bundle *paySchema.Bundle) (
 
 		useFirst := true
 		symbol := tokens[first.Tag].Symbol
-		if symbol == "U" || symbol == "STAMP" {
+		if symbol == "ANS" || symbol == "ACNH" {
 			symbol = tokens[second.Tag].Symbol
 			useFirst = false
 		}

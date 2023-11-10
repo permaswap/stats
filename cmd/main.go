@@ -6,7 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/everFinance/go-everpay/sdk"
+	"github.com/everFinance/everpay/sdk"
 	"github.com/permaswap/stats"
 	"github.com/urfave/cli/v2"
 )

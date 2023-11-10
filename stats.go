@@ -10,10 +10,10 @@ import (
 	"sync"
 	"time"
 
-	cacheSchema "github.com/everFinance/go-everpay/cache/schema"
-	paySchema "github.com/everFinance/go-everpay/pay/schema"
-	"github.com/everFinance/go-everpay/sdk"
-	sdkSchema "github.com/everFinance/go-everpay/sdk/schema"
+	cacheSchema "github.com/everFinance/everpay/cache/schema"
+	paySchema "github.com/everFinance/everpay/pay/schema"
+	"github.com/everFinance/everpay/sdk"
+	sdkSchema "github.com/everFinance/everpay/sdk/schema"
 	"gorm.io/gorm"
 
 	"github.com/gin-gonic/gin"
@@ -65,8 +65,8 @@ func New(chainID int64, routerAddr string, startTxRawID int64, startTxEverHash s
 func (s *Stats) Run(port string) {
 	s.wdb.Migrate()
 
-	s.curStats = s.loadCurStats()
 	startCursor := s.startTxRawID
+	s.curStats = s.loadCurStats()
 	if s.curStats != nil {
 		tx, err := s.everClient.TxByHash(s.curStats.LastTxEverHash)
 		if err != nil {
@@ -78,13 +78,14 @@ func (s *Stats) Run(port string) {
 			startCursor = s.curStats.LastTxRawID
 		}
 	}
-	log.Info("running", "startTxEverHash", s.startTxEverHash, "startTxRawID", startCursor, "curStats", s.curStats)
+	log.Info("running", "subscribe address", s.routerAddress, "startTxEverHash", s.startTxEverHash, "startTxRawID", startCursor, "curStats", s.curStats)
 
 	s.sub = s.everClient.SubscribeTxs(sdkSchema.FilterQuery{
 		StartCursor: startCursor,
 		Address:     s.routerAddress,
 		Action:      paySchema.TxActionBundle,
 	})
+
 	go func() {
 		for tx := range s.sub.Subscribe() {
 			s.processTx(tx)
@@ -129,15 +130,14 @@ func (s *Stats) loadCurStats() (curStats *schema.Stats) {
 }
 
 func (s *Stats) processTx(tx cacheSchema.TxResponse) {
-
-	t := time.Unix(tx.Nonce/1000, 0)
-	if s.processed[tx.EverHash] {
-		return
-	} else {
+	if _, ok := s.processed[tx.EverHash]; !ok {
 		s.processed[tx.EverHash] = true
+	} else {
+		return
 	}
 	log.Info("process new tx:", "RawId", tx.RawId, "EverHash", tx.EverHash)
 
+	t := time.Unix(tx.Nonce/1000, 0)
 	bundleData := paySchema.BundleData{}
 	err := json.Unmarshal([]byte(tx.Data), &bundleData)
 	if err != nil {

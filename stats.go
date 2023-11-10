@@ -288,7 +288,7 @@ func (s *Stats) getStatsFromBundle(nonce int64, bundle *paySchema.Bundle) (
 		}
 		_, ok = tokens[second.Tag]
 		if !ok {
-			log.Error("failed to find token", "tokenTag", first.Tag)
+			log.Error("failed to find token", "tokenTag", second.Tag)
 			return nil, nil, nil, nil, 0
 		}
 

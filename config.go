@@ -78,7 +78,7 @@ var stamp = &schema.Token{
 
 // map -> tmap
 var tmap = &schema.Token{
-	ID:        "ethereum-map-0x9e976f211daea0d652912ab99b0dc21a7fd728e4",
+	ID:        "0x9E976F211daea0D652912AB99b0Dc21a7fD728e4",
 	Symbol:    "MAP",
 	ChainType: "ethereum",
 	ChainID:   "1",
